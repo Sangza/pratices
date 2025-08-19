@@ -11,54 +11,43 @@ export async function GET(request: Request) {
       );
     }
 
-    // Mock overlap calculation
-    const mockOverlap = {
-      fidA: parseInt(fidA, 10),
-      fidB: parseInt(fidB, 10),
-      jaccardSimilarity: 0.12,
-      sharedFollowers: 1847,
-      totalFollowersA: 15420,
-      totalFollowersB: 8920,
-      sharedTopFans: [
-        {
-          fid: 1234,
-          username: "superfan.eth",
-          displayName: "Super Fan",
-          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=superfan",
-          contributions: 1250,
-          engagement: 0.85
-        },
-        {
-          fid: 5678,
-          username: "crypto_lover",
-          displayName: "Crypto Lover",
-          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=crypto",
-          contributions: 980,
-          engagement: 0.72
-        },
-        {
-          fid: 9012,
-          username: "web3_enthusiast",
-          displayName: "Web3 Enthusiast",
-          avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=web3",
-          contributions: 845,
-          engagement: 0.68
-        }
-      ],
-      overlapByChannel: [
-        { channel: "/tech", overlap: 0.25 },
-        { channel: "/crypto", overlap: 0.18 },
-        { channel: "/music", overlap: 0.12 },
-        { channel: "/art", overlap: 0.08 },
-        { channel: "/gaming", overlap: 0.05 }
-      ],
-      engagementAffinity: 0.76,
-      topicSimilarity: 0.68,
-      audienceQuality: 0.82,
-      momentum: 0.45
+    const apiKey = process.env.NEYNAR_API_KEY || '';
+    if (!apiKey) return Response.json({ error: 'Server missing NEYNAR_API_KEY' }, { status: 500 });
+
+    const headers = { 'x-api-key': apiKey } as const;
+    const makeFollowersUrl = (fid: string) => {
+      const u = new URL('https://api.neynar.com/v2/farcaster/user/followers');
+      u.searchParams.set('fid', fid);
+      u.searchParams.set('limit', '1000');
+      u.searchParams.set('sort_type', 'algorithmic');
+      return u.toString();
     };
 
-    return Response.json(mockOverlap);
+    const [r1, r2] = await Promise.all([
+      fetch(makeFollowersUrl(fidA), { headers, cache: 'no-store' }),
+      fetch(makeFollowersUrl(fidB), { headers, cache: 'no-store' }),
+    ]);
+    if (!r1.ok || !r2.ok) return Response.json({ error: 'Failed to fetch followers' }, { status: 502 });
+
+    const d1 = await r1.json();
+    const d2 = await r2.json();
+    const setA = new Set<number>((d1?.users || []).map((u: any) => u.fid));
+    const setB = new Set<number>((d2?.users || []).map((u: any) => u.fid));
+
+    const shared = [...setA].filter((fid) => setB.has(fid));
+    const union = new Set<number>([...setA, ...setB]);
+
+    const out = {
+      fidA: parseInt(fidA, 10),
+      fidB: parseInt(fidB, 10),
+      jaccardSimilarity: union.size ? shared.length / union.size : 0,
+      sharedFollowers: shared.length,
+      totalFollowersA: setA.size,
+      totalFollowersB: setB.size,
+      sharedTopFans: shared.slice(0, 20),
+    };
+
+    return Response.json(out);
   } catch (error) {
     console.error('Error calculating overlap:', error);
     return Response.json(
