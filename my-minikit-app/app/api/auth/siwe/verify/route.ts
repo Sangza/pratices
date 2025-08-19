@@ -1,5 +1,31 @@
 import { SiweMessage } from 'siwe';
 
+async function resolveFidFromAddress(address: string, apiKey: string): Promise<number | null> {
+  const headers = { 'x-api-key': apiKey } as const;
+
+  // Try bulk-by-eth-address
+  const u1 = new URL('https://api.neynar.com/v2/farcaster/user/bulk-by-eth-address');
+  u1.searchParams.set('addresses', address);
+  const r1 = await fetch(u1.toString(), { headers, cache: 'no-store' });
+  if (r1.ok) {
+    const j = await r1.json().catch(() => null) as any;
+    const cand = j?.users?.[0] || j?.result?.[0];
+    if (cand?.fid) return cand.fid as number;
+  }
+
+  // Fallback to bulk-by-address
+  const u2 = new URL('https://api.neynar.com/v2/farcaster/user/bulk-by-address');
+  u2.searchParams.set('addresses', address);
+  const r2 = await fetch(u2.toString(), { headers, cache: 'no-store' });
+  if (r2.ok) {
+    const j = await r2.json().catch(() => null) as any;
+    const cand = j?.users?.[0] || j?.result?.[0];
+    if (cand?.fid) return cand.fid as number;
+  }
+
+  return null;
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as { message: string; signature: string } | null;
   if (!body?.message || !body?.signature) {
@@ -18,27 +44,15 @@ export async function POST(request: Request) {
 
     const address = msg.address.toLowerCase();
 
-    // Resolve fid from address via Neynar
     const apiKey = process.env.NEYNAR_API_KEY || '';
     if (!apiKey) return Response.json({ error: 'Server missing NEYNAR_API_KEY' }, { status: 500 });
 
-    const url = new URL('https://api.neynar.com/v2/farcaster/user/bulk-by-address');
-    url.searchParams.set('addresses', address);
+    const fid = await resolveFidFromAddress(address, apiKey);
+    if (!fid) return Response.json({ error: 'No Farcaster account linked to this wallet' }, { status: 404 });
 
-    const resp = await fetch(url.toString(), {
-      headers: { 'x-api-key': apiKey },
-      cache: 'no-store',
-    });
-    if (!resp.ok) return Response.json({ error: 'Failed to resolve fid' }, { status: 502 });
-
-    const data = await resp.json() as { users: Array<{ fid: number; custody_address?: string }> };
-    const user = data.users?.[0];
-    if (!user?.fid) return Response.json({ error: 'No Farcaster account linked to this wallet' }, { status: 404 });
-
-    const session = { fid: user.fid, address };
-    const res = Response.json({ ok: true, fid: session.fid });
+    const session = { fid, address };
+    const res = Response.json({ ok: true, fid });
     res.headers.append('Set-Cookie', `session=${encodeURIComponent(JSON.stringify(session))}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=3600`);
-    // Clear nonce
     res.headers.append('Set-Cookie', 'siwe_nonce=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
     return res;
   } catch {
