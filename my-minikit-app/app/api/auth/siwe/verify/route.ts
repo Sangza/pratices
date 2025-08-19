@@ -1,5 +1,10 @@
 import { SiweMessage } from 'siwe';
 
+type NeynarBulkUsersResponse = {
+  users?: Array<{ fid?: number }>;
+  result?: Array<{ fid?: number }>;
+} | null;
+
 async function resolveFidFromAddress(address: string, apiKey: string): Promise<number | null> {
   const headers = { 'x-api-key': apiKey } as const;
 
@@ -8,8 +13,8 @@ async function resolveFidFromAddress(address: string, apiKey: string): Promise<n
   u1.searchParams.set('addresses', address);
   const r1 = await fetch(u1.toString(), { headers, cache: 'no-store' });
   if (r1.ok) {
-    const j = await r1.json().catch(() => null) as any;
-    const cand = j?.users?.[0] || j?.result?.[0];
+    const j = (await r1.json().catch(() => null)) as NeynarBulkUsersResponse;
+    const cand = j?.users?.[0] ?? j?.result?.[0];
     if (cand?.fid) return cand.fid as number;
   }
 
@@ -18,8 +23,8 @@ async function resolveFidFromAddress(address: string, apiKey: string): Promise<n
   u2.searchParams.set('addresses', address);
   const r2 = await fetch(u2.toString(), { headers, cache: 'no-store' });
   if (r2.ok) {
-    const j = await r2.json().catch(() => null) as any;
-    const cand = j?.users?.[0] || j?.result?.[0];
+    const j = (await r2.json().catch(() => null)) as NeynarBulkUsersResponse;
+    const cand = j?.users?.[0] ?? j?.result?.[0];
     if (cand?.fid) return cand.fid as number;
   }
 
