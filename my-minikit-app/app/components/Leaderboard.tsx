@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Trophy, Heart, MessageCircle, Share2, Gift, TrendingUp, TrendingDown, Crown } from "lucide-react";
 
 interface TopFan {
@@ -180,10 +181,12 @@ export default function Leaderboard() {
                   </div>
 
                   {/* Avatar and Info */}
-                  <img
+                  <Image
                     src={fan.avatar}
                     alt={fan.displayName}
-                    className="w-12 h-12 rounded-full"
+                    width={48}
+                    height={48}
+                    className="rounded-full"
                   />
                   <div>
                     <h4 className="font-semibold text-gray-900 dark:text-gray-100">{fan.displayName}</h4>

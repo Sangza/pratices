@@ -113,12 +113,14 @@ export class NeynarAPI {
     options: {
       limit?: number;
       cursor?: string;
+      days?: number; // optional filter window for callers
     } = {}
   ): Promise<{ casts: NeynarCast[]; pagination: { hasNextPage: boolean; nextCursor?: string } }> {
     const params: Record<string, string> = { fid: fid.toString() };
     
     if (options.limit) params.limit = options.limit.toString();
     if (options.cursor) params.cursor = options.cursor;
+    if (options.days) params.days = String(options.days);
 
     return this.request('/v2/farcaster/feed/user', params);
   }
@@ -180,13 +182,13 @@ export class NeynarAPI {
     totalTips: number;
     hourlyEngagement: number[]; // 168-dimensional vector (7 days * 24 hours)
   }> {
-    const feed = await this.getUserFeed(fid, { limit: 100 });
+    const feed = await this.getUserFeed(fid, { limit: 100, days });
     
     // Calculate engagement from casts
     let totalReplies = 0;
     let totalLikes = 0;
     let totalRecasts = 0;
-    let totalTips = 0;
+    const totalTips = 0;
     
     feed.casts.forEach(cast => {
       totalReplies += cast.reactions.replies;

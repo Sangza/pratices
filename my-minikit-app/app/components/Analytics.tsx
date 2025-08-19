@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Clock, TrendingUp, Users, Activity } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
+
+type HeatmapPoint = { day: string; hour: number; value: number };
+type OverlapItem = { name: string; value: number; color: string };
 
 interface AnalyticsData {
   followers: number;
   following: number;
   engagement: number;
   bestTimes: string[];
-  heatmapData: any[];
-  overlapData: any[];
+  heatmapData: HeatmapPoint[];
+  overlapData: OverlapItem[];
 }
 
 export default function Analytics() {
@@ -159,26 +162,6 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Audience Interests */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Audience Interests</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={analyticsData.overlapData} layout="horizontal">
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis type="number" stroke="#6b7280" />
-              <YAxis dataKey="name" type="category" width={80} stroke="#6b7280" />
-              <Tooltip wrapperStyle={{ backgroundColor: '#111827', border: '1px solid #374151', color: '#fff' }} />
-              <Bar dataKey="value">
-                {analyticsData.overlapData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
       {/* Engagement Heatmap (simple grid) */}
       <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Engagement Heatmap</h3>
@@ -190,8 +173,8 @@ export default function Analytics() {
             <div key={i} className="text-[10px] text-gray-500 dark:text-gray-400 text-center py-1">{i}</div>
           ))}
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-            <>
-              <div key={`label-${day}`} className="text-xs text-gray-500 dark:text-gray-400 py-1 pr-2 text-right">{day}</div>
+            <Fragment key={day}>
+              <div className="text-xs text-gray-500 dark:text-gray-400 py-1 pr-2 text-right">{day}</div>
               {Array.from({ length: 24 }, (_, hour) => {
                 const data = analyticsData.heatmapData.find(d => d.day === day && d.hour === hour);
                 const value = data?.value || 0;
@@ -204,7 +187,7 @@ export default function Analytics() {
                   />
                 );
               })}
-            </>
+            </Fragment>
           ))}
         </div>
       </div>

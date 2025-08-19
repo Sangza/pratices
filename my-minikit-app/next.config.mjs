@@ -6,6 +6,12 @@ const nextConfig = {
     config.externals.push("pino-pretty", "lokijs", "encoding");
     return config;
   },
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'api.dicebear.com' },
+      { protocol: 'https', hostname: 'creator-growth-hub.vercel.app' },
+    ],
+  },
 };
 
 export default nextConfig;

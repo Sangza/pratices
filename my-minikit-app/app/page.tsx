@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, BarChart3, Trophy, Users, TrendingUp } from "lucide-react";
+import { BarChart3, Trophy, Users, TrendingUp } from "lucide-react";
 import CollabFinder from "./components/CollabFinder";
 import Analytics from "./components/Analytics";
 import Leaderboard from "./components/Leaderboard";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Search, Users, TrendingUp, MessageCircle, Star } from "lucide-react";
 
 interface Creator {
@@ -18,9 +19,7 @@ export default function CollabFinder() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [recommendations, setRecommendations] = useState<Creator[]>([]);
-  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
 
-  // Mock data for demonstration
   const mockRecommendations: Creator[] = [
     {
       fid: 1234,
@@ -56,19 +55,15 @@ export default function CollabFinder() {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    
     setIsSearching(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
     setRecommendations(mockRecommendations);
     setIsSearching(false);
   };
 
   const handleInviteCollab = (creator: Creator) => {
-    // This would trigger a cast with the collaboration invitation
     const message = `Hey @${creator.username}! I found you through Creator Growth Hub - we have ${Math.round(creator.overlap * 100)}% audience overlap. Let's collaborate! 🚀`;
     console.log("Inviting to collab:", message);
-    // In real implementation, this would use Farcaster's cast API
   };
 
   const getScoreColor = (score: number) => {
@@ -117,10 +112,12 @@ export default function CollabFinder() {
               <div key={creator.fid} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-4">
-                    <img
+                    <Image
                       src={creator.avatar}
                       alt={creator.displayName}
-                      className="w-12 h-12 rounded-full"
+                      width={48}
+                      height={48}
+                      className="rounded-full"
                     />
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-gray-100">{creator.displayName}</h4>
