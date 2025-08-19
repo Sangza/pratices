@@ -6,32 +6,13 @@ export default function AuthButton() {
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      // Try Farcaster Mini App Quick Auth if available
-      if (typeof window !== "undefined") {
-        try {
-          const sdk = await import("@farcaster/miniapp-sdk");
-          if (sdk && typeof sdk.getAuthToken === "function") {
-            const jwt = await sdk.getAuthToken();
-            const resp = await fetch("/api/auth/verify", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${jwt}` },
-            });
-            if (resp.ok) {
-              // Reload to reflect authenticated state
-              window.location.reload();
-              return;
-            }
-          }
-        } catch {
-          // no-op; fallback to OAuth
-        }
-      }
-      // Fallback to OAuth on the open web
+      // Single entry: redirect to server-side login. In Base App this still opens in-app.
       window.location.href = "/api/auth/login";
     } finally {
-      setLoading(false);
+      // Let the redirect take over; keep state defensive for SSR safety
+      setTimeout(() => setLoading(false), 1000);
     }
   };
 
