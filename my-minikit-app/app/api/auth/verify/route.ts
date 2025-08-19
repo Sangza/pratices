@@ -1,3 +1,10 @@
+type MiniAppJwtPayload = {
+  fid: number;
+  username?: string;
+  displayName?: string;
+  exp?: number;
+};
+
 export async function POST(request: Request) {
   try {
     const auth = request.headers.get('authorization') || '';
@@ -8,13 +15,13 @@ export async function POST(request: Request) {
 
     // Verify Farcaster Mini App JWT
     const { verify } = await import('@farcaster/miniapp-sdk/server');
-    const payload = await verify(token);
-    // Expecting at least fid; username/displayName may be present
+    const payload = (await verify(token)) as MiniAppJwtPayload;
+
     const session = {
-      fid: (payload as any).fid,
-      username: (payload as any).username || undefined,
-      displayName: (payload as any).displayName || undefined,
-      exp: (payload as any).exp || undefined,
+      fid: payload.fid,
+      username: payload.username,
+      displayName: payload.displayName,
+      exp: payload.exp,
     };
 
     const res = Response.json({ ok: true, fid: session.fid });
@@ -23,7 +30,7 @@ export async function POST(request: Request) {
       `session=${encodeURIComponent(JSON.stringify(session))}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=3600`
     );
     return res;
-  } catch (e) {
+  } catch {
     return Response.json({ error: 'Invalid or expired token' }, { status: 401 });
   }
 }

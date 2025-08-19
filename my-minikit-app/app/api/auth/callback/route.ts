@@ -34,9 +34,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const token = await exchangeCodeForToken(code);
+    await exchangeCodeForToken(code);
     // Optional: use token to fetch user profile from Neynar if endpoint available
-    // For now, set a minimal session; in production, look up fid from token payload
     const session = { oauth: true };
 
     const res = Response.redirect(process.env.NEXT_PUBLIC_URL || '/', 302);
@@ -47,7 +46,7 @@ export async function GET(request: Request) {
     // Clear state cookie
     res.headers.append('Set-Cookie', 'oauth_state=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax');
     return res;
-  } catch (e) {
+  } catch {
     return Response.json({ error: 'OAuth callback failed' }, { status: 500 });
   }
 }

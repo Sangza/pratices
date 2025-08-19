@@ -5,7 +5,7 @@ function randomString(length = 32): string {
   return result;
 }
 
-export async function GET(_request: Request) {
+export async function GET() {
   const clientId = process.env.NEYNAR_OAUTH_CLIENT_ID || '';
   const redirectUri = process.env.NEYNAR_OAUTH_REDIRECT_URI || '';
   const authUrl = process.env.NEYNAR_OAUTH_AUTH_URL || '';
