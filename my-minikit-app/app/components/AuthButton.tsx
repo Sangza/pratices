@@ -8,11 +8,17 @@ export default function AuthButton() {
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      // Single entry: redirect to server-side login. In Base App this still opens in-app.
-      window.location.href = "/api/auth/login";
+      // Kick off SIWE nonce; client app can pick up from here (wallet connect UI)
+      const r = await fetch('/api/auth/siwe/nonce', { cache: 'no-store' });
+      if (!r.ok) {
+        // fallback: show a simple redirect to Base App (user can open there)
+        window.location.href = '/';
+        return;
+      }
+      // In a full implementation, you would now open a wallet connect modal and sign the SIWE message.
+      alert('Nonce issued. Connect wallet & sign SIWE in the next step.');
     } finally {
-      // Let the redirect take over; keep state defensive for SSR safety
-      setTimeout(() => setLoading(false), 1000);
+      setTimeout(() => setLoading(false), 500);
     }
   };
 
