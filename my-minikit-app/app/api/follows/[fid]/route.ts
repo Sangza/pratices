@@ -56,7 +56,7 @@ export async function GET(
       // 'algorithmic' — sort by followers then score
       if (b.followers !== a.followers) return b.followers - a.followers;
       return b.score - a.score;
-    }).map(({ ts, ...rest }) => rest);
+    });
 
     return NextResponse.json({
       fid: parseInt(fid, 10),
