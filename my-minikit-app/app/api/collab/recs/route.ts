@@ -1,23 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const fid = searchParams.get('fid');
     const limit = parseInt(searchParams.get('limit') || '10');
     
     if (!fid) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'fid parameter is required' },
         { status: 400 }
       );
     }
-
-    // In production, this would:
-    // 1. Get user's followers and following
-    // 2. Calculate collab scores for potential matches
-    // 3. Rank by score and return top recommendations
-    // 4. Include reasons for each recommendation
 
     // Mock collaboration recommendations
     const mockRecommendations = [
@@ -133,8 +125,8 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
-    return NextResponse.json({
-      fid: parseInt(fid),
+    return Response.json({
+      fid: parseInt(fid, 10),
       recommendations: sortedRecommendations,
       algorithm: {
         weights: {
@@ -149,7 +141,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating recommendations:', error);
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to generate recommendations' },
       { status: 500 }
     );

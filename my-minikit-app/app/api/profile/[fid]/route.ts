@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { fid: string } }
+  _request: Request,
+  context: unknown
 ) {
   try {
+    const { params } = context as { params: { fid: string } };
     const { fid } = params;
     
     // In production, this would use the Neynar API
@@ -19,7 +18,7 @@ export async function GET(
     
     // Mock data for demonstration
     const mockProfile = {
-      fid: parseInt(fid),
+      fid: parseInt(fid, 10),
       username: "creator.eth",
       displayName: "Creator Name",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=creator",
@@ -34,10 +33,10 @@ export async function GET(
       verified: true
     };
 
-    return NextResponse.json(mockProfile);
+    return Response.json(mockProfile);
   } catch (error) {
     console.error('Error fetching profile:', error);
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to fetch profile' },
       { status: 500 }
     );

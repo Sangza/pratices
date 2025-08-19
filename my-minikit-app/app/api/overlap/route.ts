@@ -1,29 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const fidA = searchParams.get('fid');
     const fidB = searchParams.get('target');
     
     if (!fidA || !fidB) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Both fid and target parameters are required' },
         { status: 400 }
       );
     }
 
-    // In production, this would:
-    // 1. Fetch followers for both users from cache or Neynar API
-    // 2. Calculate Jaccard similarity
-    // 3. Find shared top fans
-    // 4. Return overlap analysis
-
     // Mock overlap calculation
     const mockOverlap = {
-      fidA: parseInt(fidA),
-      fidB: parseInt(fidB),
-      jaccardSimilarity: 0.12, // 12% overlap
+      fidA: parseInt(fidA, 10),
+      fidB: parseInt(fidB, 10),
+      jaccardSimilarity: 0.12,
       sharedFollowers: 1847,
       totalFollowersA: 15420,
       totalFollowersB: 8920,
@@ -60,16 +52,16 @@ export async function GET(request: NextRequest) {
         { channel: "/art", overlap: 0.08 },
         { channel: "/gaming", overlap: 0.05 }
       ],
-      engagementAffinity: 0.76, // Cosine similarity of engagement patterns
-      topicSimilarity: 0.68, // TF-IDF similarity of cast content
-      audienceQuality: 0.82, // Mean quality score of shared followers
-      momentum: 0.45 // Recent engagement growth comparison
+      engagementAffinity: 0.76,
+      topicSimilarity: 0.68,
+      audienceQuality: 0.82,
+      momentum: 0.45
     };
 
-    return NextResponse.json(mockOverlap);
+    return Response.json(mockOverlap);
   } catch (error) {
     console.error('Error calculating overlap:', error);
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to calculate overlap' },
       { status: 500 }
     );

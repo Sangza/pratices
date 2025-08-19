@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 export async function GET(
-  _request: NextRequest,
-  { params }: { params: { fid: string } }
+  _request: Request,
+  context: unknown
 ) {
   try {
+    const { params } = context as { params: { fid: string } };
     const { fid } = params;
 
     // Mock leaderboard data
@@ -62,9 +61,9 @@ export async function GET(
       },
     ];
 
-    return NextResponse.json({ fid: parseInt(fid, 10), topFans, window: '30d' });
+    return Response.json({ fid: parseInt(fid, 10), topFans, window: '30d' });
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
-    return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch leaderboard' }, { status: 500 });
   }
 }
