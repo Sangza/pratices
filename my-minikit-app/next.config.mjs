@@ -11,6 +11,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'api.dicebear.com' },
       { protocol: 'https', hostname: 'creator-growth-hub.vercel.app' },
     ],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy:
+      "default-src 'self'; script-src 'none'; sandbox; style-src 'self' 'unsafe-inline'; img-src * data: blob:; media-src 'none'; connect-src 'self';",
   },
 };
 
