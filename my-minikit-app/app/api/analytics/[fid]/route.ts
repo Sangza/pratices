@@ -1,8 +1,9 @@
 export async function GET(
   _request: Request,
-  { params }: { params: { fid: string } }
+  context: unknown
 ) {
   try {
+    const { params } = context as { params: { fid: string } };
     const { fid } = params;
 
     const analytics = {
