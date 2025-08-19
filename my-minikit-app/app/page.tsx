@@ -1,115 +1,81 @@
 "use client";
 
-import {
-  useMiniKit,
-  useAddFrame,
-  useOpenUrl,
-} from "@coinbase/onchainkit/minikit";
-import {
-  Name,
-  Identity,
-  Address,
-  Avatar,
-  EthBalance,
-} from "@coinbase/onchainkit/identity";
-import {
-  ConnectWallet,
-  Wallet,
-  WalletDropdown,
-  WalletDropdownDisconnect,
-} from "@coinbase/onchainkit/wallet";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { Button } from "./components/DemoComponents";
-import { Icon } from "./components/DemoComponents";
-import { Home } from "./components/DemoComponents";
-import { Features } from "./components/DemoComponents";
+import { useState } from "react";
+import { Search, BarChart3, Trophy, Users, TrendingUp } from "lucide-react";
+import CollabFinder from "./components/CollabFinder";
+import Analytics from "./components/Analytics";
+import Leaderboard from "./components/Leaderboard";
 
-export default function App() {
-  const { setFrameReady, isFrameReady, context } = useMiniKit();
-  const [frameAdded, setFrameAdded] = useState(false);
-  const [activeTab, setActiveTab] = useState("home");
+export default function Home() {
+  const [activeTab, setActiveTab] = useState<'collab' | 'analytics' | 'leaderboard'>('collab');
 
-  const addFrame = useAddFrame();
-  const openUrl = useOpenUrl();
-
-  useEffect(() => {
-    if (!isFrameReady) {
-      setFrameReady();
+  const tabs = [
+    {
+      id: 'collab' as const,
+      label: 'Collab Finder',
+      icon: Users,
+      description: 'Find creators to collaborate with'
+    },
+    {
+      id: 'analytics' as const,
+      label: 'Analytics',
+      icon: BarChart3,
+      description: 'Social graph insights'
+    },
+    {
+      id: 'leaderboard' as const,
+      label: 'Leaderboard',
+      icon: Trophy,
+      description: 'Top fans & engagement'
     }
-  }, [setFrameReady, isFrameReady]);
-
-  const handleAddFrame = useCallback(async () => {
-    const frameAdded = await addFrame();
-    setFrameAdded(Boolean(frameAdded));
-  }, [addFrame]);
-
-  const saveFrameButton = useMemo(() => {
-    if (context && !context.client.added) {
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleAddFrame}
-          className="text-[var(--app-accent)] p-4"
-          icon={<Icon name="plus" size="sm" />}
-        >
-          Save Frame
-        </Button>
-      );
-    }
-
-    if (frameAdded) {
-      return (
-        <div className="flex items-center space-x-1 text-sm font-medium text-[#0052FF] animate-fade-out">
-          <Icon name="check" size="sm" className="text-[#0052FF]" />
-          <span>Saved</span>
-        </div>
-      );
-    }
-
-    return null;
-  }, [context, frameAdded, handleAddFrame]);
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen font-sans text-[var(--app-foreground)] mini-app-theme from-[var(--app-background)] to-[var(--app-gray)]">
-      <div className="w-full max-w-md mx-auto px-4 py-3">
-        <header className="flex justify-between items-center mb-3 h-11">
-          <div>
-            <div className="flex items-center space-x-2">
-              <Wallet className="z-10">
-                <ConnectWallet>
-                  <Name className="text-inherit" />
-                </ConnectWallet>
-                <WalletDropdown>
-                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
-                    <EthBalance />
-                  </Identity>
-                  <WalletDropdownDisconnect />
-                </WalletDropdown>
-              </Wallet>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Creator Growth Hub</h1>
+              <p className="text-gray-600 mt-1">Find collaborators, analyze your audience, and grow together</p>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <TrendingUp className="w-4 h-4" />
+              <span>Powered by Farcaster</span>
             </div>
           </div>
-          <div>{saveFrameButton}</div>
-        </header>
+        </div>
+      </div>
 
-        <main className="flex-1">
-          {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
-          {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
-        </main>
+      {/* Tab Navigation */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-white shadow-sm text-purple-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        <footer className="mt-2 pt-4 flex justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-[var(--ock-text-foreground-muted)] text-xs"
-            onClick={() => openUrl("https://base.org/builders/minikit")}
-          >
-            Built on Base with MiniKit
-          </Button>
-        </footer>
+      {/* Tab Content */}
+      <div className="max-w-4xl mx-auto px-4 pb-8">
+        {activeTab === 'collab' && <CollabFinder />}
+        {activeTab === 'analytics' && <Analytics />}
+        {activeTab === 'leaderboard' && <Leaderboard />}
       </div>
     </div>
   );
