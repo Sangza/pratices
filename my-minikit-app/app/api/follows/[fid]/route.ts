@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { fid: string } }
+  request: Request,
+  context: unknown
 ) {
   try {
+    const { params } = context as { params: { fid: string } };
     const { fid } = params;
     const { searchParams } = new URL(request.url);
     const type = (searchParams.get('type') || 'followers').toLowerCase(); // 'followers' or 'following'
@@ -27,7 +26,7 @@ export async function GET(
 
         if (resp.ok) {
           const data = await resp.json();
-          return NextResponse.json(data);
+          return Response.json(data);
         }
       } catch (e) {
         // fall through to mock if live call fails
@@ -58,7 +57,7 @@ export async function GET(
       return b.score - a.score;
     });
 
-    return NextResponse.json({
+    return Response.json({
       fid: parseInt(fid, 10),
       type,
       users: sortedUsers,
@@ -69,7 +68,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching follows:', error);
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to fetch follows' },
       { status: 500 }
     );
