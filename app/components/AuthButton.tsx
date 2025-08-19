@@ -49,8 +49,19 @@ export default function AuthButton() {
       const nonceRes = await fetch("/api/auth/siwe/nonce");
       const { nonce } = await nonceRes.json();
       
-      const message = `example.com wants you to sign in with your Ethereum account:\n${address}\n\nSign in to Creator Growth Hub.\n\nURI: ${window.location.origin}\nVersion: 1\nChain ID: ${chainId}\nNonce: ${nonce}\nIssued At: ${new Date().toISOString()}`;
+      // Create proper SIWE message
+      const siweMessage = new SiweMessage({
+        domain: window.location.host,
+        address: address as `0x${string}`,
+        statement: "Sign in to Creator Growth Hub",
+        uri: window.location.origin,
+        version: "1",
+        chainId: chainId,
+        nonce: nonce,
+        issuedAt: new Date().toISOString(),
+      });
       
+      const message = siweMessage.prepareMessage();
       const signature = await signMessageAsync({ message });
       
       const verifyRes = await fetch("/api/auth/siwe/verify", {
@@ -66,9 +77,11 @@ export default function AuthButton() {
       } else {
         const error = await verifyRes.json();
         console.error("Verification failed:", error);
+        alert(`Verification failed: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Sign in failed:", error);
+      alert(`Sign in failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
