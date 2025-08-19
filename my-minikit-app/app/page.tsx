@@ -5,6 +5,7 @@ import { BarChart3, Trophy, Users, TrendingUp } from "lucide-react";
 import CollabFinder from "./components/CollabFinder";
 import Analytics from "./components/Analytics";
 import Leaderboard from "./components/Leaderboard";
+import AuthButton from "./components/AuthButton";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'collab' | 'analytics' | 'leaderboard'>('collab');
@@ -40,9 +41,12 @@ export default function Home() {
               <h1 className="text-2xl font-bold text-gray-900">Creator Growth Hub</h1>
               <p className="text-gray-600 mt-1">Find collaborators, analyze your audience, and grow together</p>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <TrendingUp className="w-4 h-4" />
-              <span>Powered by Farcaster</span>
+            <div className="flex items-center space-x-3 text-sm">
+              <div className="hidden sm:flex items-center space-x-2 text-gray-500">
+                <TrendingUp className="w-4 h-4" />
+                <span>Powered by Farcaster</span>
+              </div>
+              <AuthButton />
             </div>
           </div>
         </div>
