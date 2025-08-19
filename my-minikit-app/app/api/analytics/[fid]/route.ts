@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  _request: NextRequest,
+  _request: Request,
   { params }: { params: { fid: string } }
 ) {
   try {
@@ -31,9 +31,9 @@ export async function GET(
       ],
     };
 
-    return NextResponse.json({ fid: parseInt(fid, 10), analytics });
+    return Response.json({ fid: parseInt(fid, 10), analytics });
   } catch (error) {
     console.error('Error fetching analytics:', error);
-    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch analytics' }, { status: 500 });
   }
 }
