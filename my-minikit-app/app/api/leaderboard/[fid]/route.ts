@@ -9,7 +9,6 @@ export async function GET(
     const apiKey = process.env.NEYNAR_API_KEY || '';
     if (apiKey) {
       try {
-        // Approximation: fetch recent user feed and aggregate reactions by actor
         const u = new URL('https://api.neynar.com/v2/farcaster/feed/user');
         u.searchParams.set('fid', String(fid));
         u.searchParams.set('limit', '50');
@@ -17,8 +16,8 @@ export async function GET(
         const r = await fetch(u.toString(), { headers, cache: 'no-store' });
         if (r.ok) {
           const j = await r.json();
-          // Aggregate reactions by actor is not directly available; show placeholder with posts count
-          const topFans = (j?.casts || []).slice(0, 10).map((c: any, i: number) => ({
+          const casts = (j?.casts || []) as Array<{ author?: { fid?: number; username?: string; display_name?: string; pfp_url?: string }; reactions?: { likes?: number; recasts?: number }; replies?: number }>;
+          const topFans = casts.slice(0, 10).map((c, i) => ({
             fid: c?.author?.fid || 1000 + i,
             username: c?.author?.username || `user${i}`,
             displayName: c?.author?.display_name || `User ${i}`,
@@ -37,12 +36,11 @@ export async function GET(
           }));
           return Response.json({ fid, topFans, window: '30d' });
         }
-      } catch (e) {
+      } catch {
         // fall through to mock
       }
     }
 
-    // Mock fallback
     const topFans = Array.from({ length: 5 }, (_, i) => ({
       fid: 1000 + i,
       username: `fan${i}`,

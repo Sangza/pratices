@@ -1,5 +1,9 @@
 type NeynarUserLite = { fid: number; username?: string; display_name?: string; pfp_url?: string; score?: number };
 
+type NeynarFollowersResp = { users?: Array<{ fid: number }> };
+
+type NeynarFeedResp = { casts?: Array<{ text?: string; timestamp?: string; published_at?: string; reactions?: { likes?: number; recasts?: number; replies?: number } }> };
+
 type CandidateScore = {
   fid: number;
   username: string;
@@ -36,7 +40,7 @@ function hourOfWeek(dateIso: string): number {
   return day * 24 + hour; // 0..167
 }
 
-function buildHoWVector(casts: any[]): number[] {
+function buildHoWVector(casts: NonNullable<NeynarFeedResp['casts']>): number[] {
   const v = new Array(168).fill(0);
   for (const c of casts) {
     const idx = hourOfWeek(c?.timestamp || c?.published_at || new Date().toISOString());
@@ -60,15 +64,15 @@ function topicSim(textsA: string[], textsB: string[]): number {
   return union.size ? inter.size / union.size : 0;
 }
 
-function recentMomentum(casts: any[], days = 28): number {
+function recentMomentum(casts: NonNullable<NeynarFeedResp['casts']>, days = 28): number {
   const now = Date.now();
   const msDay = 86400000;
-  const recent = casts.filter(c => now - new Date(c?.timestamp || c?.published_at).getTime() <= (days/2)*msDay);
+  const recent = casts.filter(c => now - new Date(c?.timestamp || c?.published_at || 0).getTime() <= (days/2)*msDay);
   const prior = casts.filter(c => {
-    const dt = now - new Date(c?.timestamp || c?.published_at).getTime();
+    const dt = now - new Date(c?.timestamp || c?.published_at || 0).getTime();
     return dt > (days/2)*msDay && dt <= days*msDay;
   });
-  const sum = (arr: any[]) => arr.reduce((s, c) => s + (c?.reactions?.replies||0)*5 + (c?.reactions?.recasts||0)*2 + (c?.reactions?.likes||0), 0);
+  const sum = (arr: NonNullable<NeynarFeedResp['casts']>) => arr.reduce((s, c) => s + (c?.reactions?.replies||0)*5 + (c?.reactions?.recasts||0)*2 + (c?.reactions?.likes||0), 0);
   const a = sum(recent), b = sum(prior);
   if (!b) return a ? 1 : 0;
   const g = (a - b) / b; // growth
@@ -87,7 +91,6 @@ export async function GET(request: Request) {
     if (!apiKey) return Response.json({ error: 'Server missing NEYNAR_API_KEY' }, { status: 500 });
     const headers = { 'x-api-key': apiKey } as const;
 
-    // 1) Candidates: users the creator is following (up to 25)
     const followingUrl = new URL('https://api.neynar.com/v2/farcaster/user/following');
     followingUrl.searchParams.set('fid', String(fid));
     followingUrl.searchParams.set('limit', '25');
@@ -95,58 +98,54 @@ export async function GET(request: Request) {
     const followingResp = await fetch(followingUrl.toString(), { headers, cache: 'no-store' });
     if (!followingResp.ok) return Response.json({ error: 'Failed to fetch following' }, { status: 502 });
     const following = await followingResp.json();
-    const candidates: NeynarUserLite[] = (following?.users || []).map((u: any) => ({
+    const candidates: NeynarUserLite[] = (following?.users || []).map((u: { fid: number; username?: string; display_name?: string; pfp_url?: string; score?: number }) => ({
       fid: u.fid, username: u.username, display_name: u.display_name, pfp_url: u.pfp_url, score: u.score
     }));
 
-    // 2) Fetch creator followers once
     const followersUrlA = new URL('https://api.neynar.com/v2/farcaster/user/followers');
     followersUrlA.searchParams.set('fid', String(fid));
     followersUrlA.searchParams.set('limit', '1000');
     followersUrlA.searchParams.set('sort_type', 'algorithmic');
     const followersAResp = await fetch(followersUrlA.toString(), { headers, cache: 'no-store' });
-    const followersA = followersAResp.ok ? await followersAResp.json() : { users: [] };
-    const setA = new Set<number>((followersA?.users || []).map((u: any) => u.fid));
+    const followersA = followersAResp.ok ? await followersAResp.json() as NeynarFollowersResp : { users: [] };
+    const setA = new Set<number>((followersA.users || []).map((u) => u.fid));
 
-    // 3) Creator recent casts & vectors/topics
     const feedAUrl = new URL('https://api.neynar.com/v2/farcaster/feed/user');
     feedAUrl.searchParams.set('fid', String(fid)); feedAUrl.searchParams.set('limit', '100');
     const feedAResp = await fetch(feedAUrl.toString(), { headers, cache: 'no-store' });
-    const feedA = feedAResp.ok ? await feedAResp.json() : { casts: [] };
-    const vecA = buildHoWVector(feedA?.casts || []);
-    const textsA = (feedA?.casts || []).map((c: any) => c?.text || "");
-    const momentumA = recentMomentum(feedA?.casts || []);
+    const feedA = (feedAResp.ok ? await feedAResp.json() : { casts: [] }) as NeynarFeedResp;
+    const castsA = feedA.casts || [];
+    const vecA = buildHoWVector(castsA);
+    const textsA = castsA.map((c) => c?.text || "");
 
-    // 4) Score candidates (sequential with small cap to respect rate limits)
     const scored: CandidateScore[] = [];
     for (const c of candidates) {
       try {
-        // Followers for candidate
         const followersUrlB = new URL('https://api.neynar.com/v2/farcaster/user/followers');
         followersUrlB.searchParams.set('fid', String(c.fid));
         followersUrlB.searchParams.set('limit', '1000');
         followersUrlB.searchParams.set('sort_type', 'algorithmic');
         const followersBResp = await fetch(followersUrlB.toString(), { headers, cache: 'no-store' });
         if (!followersBResp.ok) continue;
-        const followersB = await followersBResp.json();
-        const setB = new Set<number>((followersB?.users || []).map((u: any) => u.fid));
+        const followersB = await followersBResp.json() as NeynarFollowersResp;
+        const setB = new Set<number>((followersB.users || []).map((u) => u.fid));
         const inter = [...setA].filter(x => setB.has(x));
         const union = new Set<number>([...setA, ...setB]);
         const overlap = union.size ? inter.length / union.size : 0;
 
-        // Candidate feed
         const feedBUrl = new URL('https://api.neynar.com/v2/farcaster/feed/user');
         feedBUrl.searchParams.set('fid', String(c.fid)); feedBUrl.searchParams.set('limit', '100');
         const feedBResp = await fetch(feedBUrl.toString(), { headers, cache: 'no-store' });
         if (!feedBResp.ok) continue;
-        const feedB = await feedBResp.json();
-        const vecB = buildHoWVector(feedB?.casts || []);
-        const textsB = (feedB?.casts || []).map((x: any) => x?.text || "");
+        const feedB = await feedBResp.json() as NeynarFeedResp;
+        const castsB = feedB.casts || [];
+        const vecB = buildHoWVector(castsB);
+        const textsB = castsB.map((x) => x?.text || "");
 
         const engAffinity = cosine(vecA, vecB);
         const topics = topicSim(textsA, textsB);
         const audQuality = typeof c.score === 'number' ? Math.max(0, Math.min(1, c.score)) : null;
-        const momentumB = recentMomentum(feedB?.casts || []);
+        const momentumB = recentMomentum(castsB);
 
         const score = 100 * (
           WEIGHTS.overlap * overlap +

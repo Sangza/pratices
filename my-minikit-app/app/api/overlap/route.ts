@@ -1,3 +1,5 @@
+type NeynarFollowersResp = { users?: Array<{ fid: number }> };
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -29,10 +31,10 @@ export async function GET(request: Request) {
     ]);
     if (!r1.ok || !r2.ok) return Response.json({ error: 'Failed to fetch followers' }, { status: 502 });
 
-    const d1 = await r1.json();
-    const d2 = await r2.json();
-    const setA = new Set<number>((d1?.users || []).map((u: any) => u.fid));
-    const setB = new Set<number>((d2?.users || []).map((u: any) => u.fid));
+    const d1 = (await r1.json()) as NeynarFollowersResp;
+    const d2 = (await r2.json()) as NeynarFollowersResp;
+    const setA = new Set<number>((d1.users || []).map((u) => u.fid));
+    const setB = new Set<number>((d2.users || []).map((u) => u.fid));
 
     const shared = [...setA].filter((fid) => setB.has(fid));
     const union = new Set<number>([...setA, ...setB]);
